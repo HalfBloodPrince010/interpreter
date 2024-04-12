@@ -29,6 +29,7 @@ public class GenerateAst {
           // Other expressions...
         }
 
+
         This Script generates the class for each expression like above.
         */
         if(args.length != 1) {
@@ -56,6 +57,9 @@ public class GenerateAst {
         writer.println();
         writer.println("abstract class " + baseName + " {");
 
+        // Define Visitor Class Interface
+        defineVisitor(writer, baseName, types);
+
         // AST Classes
         for (String type: types) {
             String className = type.split(":")[0].trim();
@@ -63,20 +67,31 @@ public class GenerateAst {
             defineType(writer, baseName, className, fields);
         }
 
+        // Abstract base accept() method
+        writer.println();
+        writer.println("  abstract <R> R accept(Visitor<R> visitor);");
+
         writer.println("}");
         writer.close();
     }
 
     private static void defineType(
-            PrintWriter writer, String basename,
+            PrintWriter writer, String baseName,
             String className, String fieldList) {
-        writer.println(" static class " + className + " extends " + basename + " {");
+        writer.println("  static class " + className + " extends " + baseName + " {");
+        String[] fields = fieldList.split(", ");
+
+        // Fields.
+        writer.println();
+        for (String field : fields) {
+            writer.println("    final " + field + ";");
+        }
+        writer.println();
 
         // Constructor.
         writer.println("    " + className + "(" + fieldList + ") {");
 
         // Store Parameters in fields
-        String[] fields = fieldList.split(", ");
         for(String field: fields) {
             String name = field.split(" ")[1];
             writer.println("      this." + name + "=" + name + ";");
@@ -84,12 +99,30 @@ public class GenerateAst {
 
         writer.println("    }");
 
-        // Fields.
+        // Visitor Patter.
         writer.println();
-        for (String field : fields) {
-            writer.println("    final " + field + ";");
+        writer.println("    @Override");
+        writer.println("    <R> R accept(Visitor<R> visitor) {");
+        writer.println("      return visitor.visit" +
+                className + baseName + "(this);");
+        writer.println("    }");
+
+        writer.println("  }");
+        writer.println();
+    }
+
+    private static void defineVisitor(
+            PrintWriter writer, String baseName, List<String> types
+    ) {
+        writer.println("  interface Visitor<R> {");
+
+        for (String type: types) {
+            String typeName = type.split(":")[0].trim();
+            writer.println("    R visit" + typeName + baseName + "(" +
+                    typeName + " " + baseName.toLowerCase() + ");");
         }
 
         writer.println("  }");
+        writer.println();
     }
 }
