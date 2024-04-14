@@ -152,7 +152,7 @@ class Scanner {
         addToken(STRING, value);
     }
 
-    // Checkf for first char being not a digit, only alphabet or _
+    // Check for first char being not a digit, only alphabet or _
     private boolean isAlpha(char c) {
         return (c >= 'a' && c <= 'z') ||
                 (c >= 'A' && c <= 'Z') ||
