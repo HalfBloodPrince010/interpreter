@@ -1,6 +1,32 @@
 package com.craftinginterpreters.lox;
 
 class Interpreter implements Expr.Visitor<Object> {
+
+    void interpreter(Expr expression) {
+        try {
+            Object value = evaluate(expression);
+            System.out.println(stringify(value));
+        } catch (RuntimeError error) {
+            Lox.runtimeError(error);
+        }
+    }
+
+    private String stringify(Object object) {
+        if (object == null) return "nil";
+
+        if (object instanceof Double) {
+            String text = object.toString();
+            // Lox uses double precision numbers even for integers, hence while printing stripping it out.
+            // java adds .0 to differentiate between integer and float.
+            if (text.endsWith(".0")) {
+                text = text.substring(0, text.length() - 2);
+            }
+            return text;
+        }
+
+        return object.toString();
+    }
+
     @Override
     public Object visitBinaryExpr(Expr.Binary expr) {
         Object left = evaluate(expr.left);
