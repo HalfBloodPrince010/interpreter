@@ -46,12 +46,12 @@ public class Lox {
         List<Token> tokens = scanner.scanTokens();
 
         Parser parser = new Parser(tokens);
-        Expr expression = parser.parse();
+        List<Stmt> statements = parser.parse();
         if (hadError) return;
         System.out.println("====Abstract Syntax Tree====");
-        System.out.println(new AstPrinter().print(expression));
+//        System.out.println(new AstPrinter().print(expression));
 
-        interpreter.interpreter(expression);
+        interpreter.interpreter(statements);
     }
 
     static void error(int line, String message) {
