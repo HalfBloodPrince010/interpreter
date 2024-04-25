@@ -18,4 +18,14 @@ class Environment {
 
         throw new RuntimeError(name, "Undefined Variable '" + variableName + "'.");
     }
+
+    void assign(Token name, Object value) {
+        String variableName = name.lexeme;
+        if (values.containsKey(variableName)) {
+            values.put(variableName, value);
+            return;
+        }
+
+        throw new RuntimeError(name, "Undefined Variable '" + variableName + "'.");
+    }
 }
