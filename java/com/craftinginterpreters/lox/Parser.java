@@ -30,6 +30,7 @@ public class Parser {
 
     private Stmt declaration() {
         try {
+            if (match(CLASS)) return classDeclaration();
             if (match(FUN)) return function("function");
             if (match(VAR)) return varDeclaration();
             return statement();
@@ -39,16 +40,30 @@ public class Parser {
         }
     }
 
-    private Stmt function(String kind) {
+    private Stmt classDeclaration() {
+        Token name = consume(IDENTIFIER, "Expect class name.");
+        consume(LEFT_PAREN, "Expect '{' before class body");
+
+        List<Stmt.Function> methods = new ArrayList<>();
+        while(!check(RIGHT_PAREN) && !isAtEnd()) {
+            methods.add(function("method"));
+        }
+
+        consume(RIGHT_PAREN, "Expect '}' after class body");
+
+        return new Stmt.Class(name, methods);
+    }
+
+    private Stmt.Function function(String kind) {
         Token name = consume(IDENTIFIER, "Expect " + kind + " name.");
         consume(LEFT_PAREN, "Expect '(' after " + kind + " name");
-        List<Token> paramters = new ArrayList<>();
+        List<Token> parameters = new ArrayList<>();
         if (!check(RIGHT_PAREN)) {
             do {
-                if (paramters.size() > 255) {
+                if (parameters.size() > 255) {
                     error(peek(), "Can't have more than 255 parameters");
                 }
-                paramters.add(
+                parameters.add(
                         consume(IDENTIFIER, "Expect Parameter name.")
                 );
             } while (match(COMMA));
@@ -57,7 +72,7 @@ public class Parser {
         consume(LEFT_BRACE, "Expect '{' before " + kind + " body.");
         List<Stmt> body = block();
 
-        return new Stmt.Function(name, paramters, body);
+        return new Stmt.Function(name, parameters, body);
     }
 
     private Stmt varDeclaration() {
