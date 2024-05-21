@@ -11,6 +11,7 @@ public class Resolver implements Expr.Visitor<Void>, Stmt.Visitor<Void> {
     private final Interpreter interpreter;
     private final Stack<Map<String, Boolean>> scopes = new Stack<>();
     private FunctionType currentFunction = FunctionType.None;
+    private ClassType currentClass = ClassType.None;
 
     Resolver (Interpreter interpreter) {
         this.interpreter = interpreter;
@@ -20,6 +21,11 @@ public class Resolver implements Expr.Visitor<Void>, Stmt.Visitor<Void> {
         None,
         FUNCTION,
         METHOD
+    }
+
+    private enum ClassType {
+        None,
+        CLASS
     }
 
     void resolve(List<Stmt> statements) {
@@ -102,6 +108,19 @@ public class Resolver implements Expr.Visitor<Void>, Stmt.Visitor<Void> {
     }
 
     @Override
+    public Void visitThisExpr(Expr.This expr) {
+        if (currentClass == ClassType.None) {
+            Lox.error(expr.keyword, "Can't use 'this' outside of a class");
+            return null;
+        }
+        // Behaves similar to the Variable, where we want to know
+        // How many hops away "this" variable was declared, so when
+        // interpreting, we can hop that many envs to get it.
+        resolveLocal(expr, expr.keyword);
+        return null;
+    }
+
+    @Override
     public Void visitUnaryExpr(Expr.Unary expr) {
         resolve(expr.right);
         return null;
@@ -136,8 +155,12 @@ public class Resolver implements Expr.Visitor<Void>, Stmt.Visitor<Void> {
 
     @Override
     public Void visitClassStmt(Stmt.Class stmt) {
+        ClassType enclosingClass = currentClass;
+        currentClass = ClassType.CLASS;
         declare(stmt.name);
         define(stmt.name);
+        beginScope();
+        scopes.peek().put("this", true);
         // Unlike Function where we declare and define the function name in
         // current scope/env, we don't do it for method, because call directly
         // call them like function, it always needs to be accessed via class.
@@ -147,6 +170,9 @@ public class Resolver implements Expr.Visitor<Void>, Stmt.Visitor<Void> {
             FunctionType declaration = FunctionType.METHOD;
             resolveFunction(method, declaration);
         }
+        endScope();
+
+        currentClass = enclosingClass;
         return null;
     }
 
