@@ -22,12 +22,21 @@ public class LoxClass implements LoxCallable {
 
     @Override
     public int arity() {
-        return 0;
+        LoxFunction initializer = findMethod("init");
+        if (initializer == null) return 0;
+        return initializer.arity();
     }
 
     @Override
     public Object call(Interpreter interpreter, List<Object> arguments) {
+        // When we create an Object:
+        // 1. Allocate memory
         LoxInstance instance = new LoxInstance(this);
+        // 2. "Call/Invoke" Constructor to initialize.
+        LoxFunction initializer = findMethod("init");
+        if(initializer != null) {
+            initializer.bind(instance).call(interpreter, arguments);
+        }
 
         return instance;
     }
