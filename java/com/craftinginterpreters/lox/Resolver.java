@@ -26,6 +26,7 @@ public class Resolver implements Expr.Visitor<Void>, Stmt.Visitor<Void> {
 
     private enum ClassType {
         None,
+        SUBCLASS,
         CLASS
     }
 
@@ -109,6 +110,19 @@ public class Resolver implements Expr.Visitor<Void>, Stmt.Visitor<Void> {
     }
 
     @Override
+    public Void visitSuperExpr(Expr.Super expr) {
+        // Resolve, how many hops away is the super keyword, we have added "super" to scope, need to find the hops
+        if (currentClass == ClassType.None) {
+            Lox.error(expr.keyword, "Can't use 'super' outside of a class");
+        } else if (currentClass != ClassType.SUBCLASS) {
+            Lox.error(expr.keyword, "Can't use 'super' in a class with no superclass");
+        }
+
+        resolveLocal(expr, expr.keyword);
+        return null;
+    }
+
+    @Override
     public Void visitThisExpr(Expr.This expr) {
         if (currentClass == ClassType.None) {
             Lox.error(expr.keyword, "Can't use 'this' outside of a class");
@@ -160,6 +174,22 @@ public class Resolver implements Expr.Visitor<Void>, Stmt.Visitor<Void> {
         currentClass = ClassType.CLASS;
         declare(stmt.name);
         define(stmt.name);
+        if (stmt.superclass != null && stmt.name.lexeme.equals(stmt.superclass.name.lexeme)) {
+            // class Oops < Oops {}
+            Lox.error(stmt.superclass.name, "A class can't inherit itself.");
+        }
+        if (stmt.superclass != null) {
+            // This gets set only if we have subclass superclass relation. We need to ensure we don't use
+            // super when there is no inheritance.
+            currentClass = ClassType.SUBCLASS;
+            // Resolves how many hops away is the superclass, (or else global scope)
+            resolve(stmt.superclass);
+        }
+        if (stmt.superclass != null) {
+            beginScope();
+            //global scope --> super(bind during returning superclass method) --> this (bind during returning method) --> method
+            scopes.peek().put("super", true);
+        }
         beginScope();
         scopes.peek().put("this", true);
         // Unlike Function where we declare and define the function name in
@@ -175,6 +205,8 @@ public class Resolver implements Expr.Visitor<Void>, Stmt.Visitor<Void> {
             resolveFunction(method, declaration);
         }
         endScope();
+
+        if (stmt.superclass != null) endScope();
 
         currentClass = enclosingClass;
         return null;
