@@ -100,10 +100,10 @@ class Scanner {
 
             default:
                 if (isDigit(c)) {
-                    number();
+                    number(); break;
                 } else if (isAlpha(c)) {
                     // Identifiers. And if identifier is a reserved word, then it's a Keyword
-                    identifier();
+                    identifier(); break;
                 }
                 // Anything that doesn't match the pattern is a Lexical error
                 Lox.error(line, "Unexpected Character.");
@@ -145,10 +145,13 @@ class Scanner {
         }
         if(isAtEnd()) {
             Lox.error(line, "Unterminated String");
+            return;
         }
+
         advance(); // This is the closing ", move to next char, else we will scan the closing " as starting " in switch.
         // Resulting in an unterminated string error.
-        String value = source.substring(start-1, current-1);
+        // Trim the surrounding quotes.
+        String value = source.substring(start + 1, current - 1);
         addToken(STRING, value);
     }
 

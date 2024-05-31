@@ -99,7 +99,7 @@ public class Parser {
         if (match(PRINT)) return printStatement();
         if (match(RETURN)) return returnStatement();
         if (match(WHILE)) return whileStatement();
-        if (match(LEFT_PAREN)) return new Stmt.Block(block());
+        if (match(LEFT_BRACE)) return new Stmt.Block(block());
 
         return expressionStatement();
     }
@@ -144,12 +144,13 @@ public class Parser {
         consume(SEMICOLON, "Expect ';' after 'loop' condition");
 
         Expr increment = null;
-        if (!check(SEMICOLON)) {
+        if (!check(RIGHT_PAREN)) {
             increment = expression();
         }
-        consume(SEMICOLON, "Expect ')' after 'for loop'");
+        consume(RIGHT_PAREN, "Expect ')' after for clauses.");
 
         Stmt body = statement();
+
         if (increment != null) {
             body = new Stmt.Block(
                     Arrays.asList(
@@ -164,6 +165,7 @@ public class Parser {
         }
 
         body = new Stmt.While(condition, body);
+
         if (initializer != null) {
             body = new Stmt.Block(Arrays.asList(initializer, body));
         }
@@ -187,7 +189,7 @@ public class Parser {
     private List<Stmt> block() {
         List<Stmt> statements = new ArrayList<>();
 
-        while(!check(RIGHT_PAREN) && !isAtEnd()) {
+        while(!check(RIGHT_BRACE) && !isAtEnd()) {
             statements.add(declaration());
         }
 
@@ -219,7 +221,7 @@ public class Parser {
             Expr value = assignment();
 
             if (expr instanceof Expr.Variable) {
-                Token name = ((Expr.Variable) value).name;
+                Token name = ((Expr.Variable) expr).name;
                 return new Expr.Assign(name, value);
             } else if (expr instanceof Expr.Get) {
                 Expr.Get get = (Expr.Get) expr;
@@ -333,7 +335,7 @@ public class Parser {
             } else if (match(DOT)) {
                 Token name = consume(IDENTIFIER,
                         "Expect Property name after '.'");
-                new Expr.Get(expr, name);
+                expr = new Expr.Get(expr, name);
             } else {
                 break;
             }
@@ -436,7 +438,7 @@ public class Parser {
 
     private Token consume(TokenType type, String message) {
         if (check(type)) {
-            advance();
+            return advance();
         }
         throw error(peek(), message);
     }

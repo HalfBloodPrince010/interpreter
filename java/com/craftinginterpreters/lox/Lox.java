@@ -33,7 +33,7 @@ public class Lox {
         InputStreamReader input = new InputStreamReader(System.in);
         BufferedReader reader = new BufferedReader(input);
         for (;;) {
-            System.out.println("> ");
+            System.out.print("> ");
             String line = reader.readLine();
             if (line == null) break;
             run(line);
@@ -48,7 +48,7 @@ public class Lox {
         Parser parser = new Parser(tokens);
         List<Stmt> statements = parser.parse();
         if (hadError) return;
-        System.out.println("====Abstract Syntax Tree====");
+//        System.out.println("====Abstract Syntax Tree====");
 //        System.out.println(new AstPrinter().print(expression));
 
         Resolver resolver = new Resolver(interpreter);
